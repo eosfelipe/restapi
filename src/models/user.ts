@@ -1,10 +1,11 @@
 import { model, Schema, Document } from "mongoose"
-// import bcrypt from "bcrypt"
-import md5 from "md5"
+import bcrypt from "bcrypt"
+// import md5 from "md5"
 
 export interface IUser extends Document{
     email: string,
-    password: string
+    password: string,
+    comparePassword: (arg0: string) => Promise<boolean>
 }
 
 const userSchema = new Schema({
@@ -25,18 +26,15 @@ userSchema.pre<IUser>('save', async function(next){
     const user = this;
     if(!user.isModified('password')) return next();
 
-    // const salt = await bcrypt.genSalt(10);
-    // const hash = await bcrypt.hash(user.password, salt);
-    const hash = md5(user.password);
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(user.password, salt);
 
     user.password = hash;
     next();
 });
 
 userSchema.methods.comparePassword = async function (password: string): Promise<boolean>{
-    // return await bcrypt.compare(password, this.password);
-    if(md5(password) === this.password)
-    return true;
+    return await bcrypt.compare(password, this.password);
 };
 
 export default model<IUser>('User', userSchema);
